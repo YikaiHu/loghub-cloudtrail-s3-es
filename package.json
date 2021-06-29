@@ -1,0 +1,23 @@
+{
+  "name": "loghub",
+  "version": "0.1.0",
+  "bin": {
+    "cdk-solution": "bin/cdk-solution.js"
+  },
+  "scripts": {
+    "cleanup": "tsc --build .. --clean && rm -rf node_modules && rm -f package-lock.json",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/node": "^15.12.5",
+    "aws-cdk": "1.97.0",
+    "aws-sdk": "^2.736.0",
+    "typescript": "~3.9.7"
+  },
+  "dependencies": {
+    "@aws-cdk/core": "1.97.0"
+  }
+}
