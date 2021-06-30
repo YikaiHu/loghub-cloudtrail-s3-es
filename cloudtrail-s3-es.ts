@@ -13,14 +13,15 @@ var endpoint = 'vpc-loghub-poaml2l2lbh6ssqbzadioh4gri.us-east-1.es.amazonaws.com
 // to CloudWatch Logs.
 var logFailedResponses = true;
 
-// const handler = async function (input: any, context: any) {
-const handler = async function () {
+const handler = async function (event:any, context:any) {
     const S3 = new AWS.S3({ region: process.env.AWS_REGION, apiVersion: '2006-03-01' });
-    const params =
-    {
-        Bucket: 'cloudtrail-s3-us-east-1-loghub', // a path to your Bucket
-        Key: 'AWSLogs/691546483958/CloudTrail/us-east-1/2021/06/30/691546483958_CloudTrail_us-east-1_20210630T0135Z_BWY4xdFOdVRZmd8P.json.gz' // a key (literally a path to your file)
-    }
+    // Get the object from the event and show its content type
+    const bucket = event.Records[0].s3.bucket.name;
+    const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
+    const params = {
+        Bucket: bucket,
+        Key: key,
+    }; 
 
     await S3.getObject(params, async function (err, data) {
         if (err !== null) {
@@ -50,10 +51,10 @@ const handler = async function () {
 
                 if (error) {
                     logFailure(error, failedItems);
-                    console.log(JSON.stringify(error));
+                    context.fail(JSON.stringify(error));
                 } else {
                     console.log('Success: ' + JSON.stringify(success));
-                    // context.succeed('Success');
+                    context.succeed('Success');
                 }
             });
         });
@@ -70,17 +71,17 @@ function transform(payload: any) {
     payload.Records.forEach(function (Record: any) {
         // index name format: cwl-YYYY.MM.DD
         var indexName = [
-            'cloudtrail-' + Record.eventTime.substring(0, 4),              // year
+            'cloudtrail-' + Record.eventTime.substring(0, 4),    // year
             Record.eventTime.substring(5, 7),                    // month
-            Record.eventTime.substring(8, 10)                     // day
+            Record.eventTime.substring(8, 10)                    // day
         ].join('.');
 
         var source = buildSource(Record);
 
         source['@timestamp'] = Record.eventTime;
-        source['@message'] = Record;
+        source['@message'] = JSON.stringify(Record);
         source['@owner'] = payload.owner;
-        
+
         //Using ElasticSearch created _id.
         var action = {
             "index": {
