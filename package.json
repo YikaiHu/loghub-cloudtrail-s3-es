@@ -15,7 +15,8 @@
     "@types/node": "^15.12.5",
     "aws-cdk": "1.97.0",
     "aws-sdk": "^2.736.0",
-    "typescript": "~3.9.7"
+    "typescript": "~3.9.7",
+    "moment": "^2.24.0"
   },
   "dependencies": {
     "@aws-cdk/core": "1.97.0"
