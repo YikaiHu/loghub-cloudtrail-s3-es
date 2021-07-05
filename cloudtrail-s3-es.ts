@@ -6,59 +6,60 @@ import zlib = require('zlib');
 import crypto = require('crypto');
 import AWS = require('aws-sdk');
 
-var endpoint = 'vpc-loghub-poaml2l2lbh6ssqbzadioh4gri.us-east-1.es.amazonaws.com';
+const _region = process.env.AWS_REGION;
+const _workType = 'CLOUDTRAIL';
 
-// Set this to true if you want to debug why data isn't making it to
-// your Elasticsearch cluster. This will enable logging of failed items
-// to CloudWatch Logs.
+var endpoint = 'vpc-loghub-poamxxxxxxxxxxxxx.us-east-1.es.amazonaws.com';
 var logFailedResponses = true;
 
-const handler = async function (event:any, context:any) {
-    const S3 = new AWS.S3({ region: process.env.AWS_REGION, apiVersion: '2006-03-01' });
+const handler = async function (event: any, context: any) {
+    const S3 = new AWS.S3({ region: _region, apiVersion: '2006-03-01' });
     // Get the object from the event and show its content type
     const bucket = event.Records[0].s3.bucket.name;
     const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
     const params = {
         Bucket: bucket,
         Key: key,
-    }; 
-
-    await S3.getObject(params, async function (err, data) {
-        if (err !== null) {
-            console.error(err);
-        }
-
-        var zippedInput = Buffer.from(data.Body as string, 'base64');
-
-        // decompress the input
-        zlib.gunzip(zippedInput, function (error, buffer) {
-            if (error) { console.log('gzip err:', error); return; }
-            // parse the input from JSON
-            var awslogsData = JSON.parse(buffer.toString('utf8'));
-            // console.log('gzip log: ', awslogsData);
-
-            var elasticsearchBulkData = transform(awslogsData);
-            // console.log('bulkdata:' + JSON.stringify(elasticsearchBulkData));
-
-            // post documents to the Amazon Elasticsearch Service
-            post(elasticsearchBulkData, function (error: any, success: any, statusCode: any, failedItems: any) {
-                console.log('Response: ' + JSON.stringify({
-                    "statusCode": statusCode
-                }));
-                console.log('error', JSON.stringify(error))
-
-                console.log('failedItems', JSON.stringify(failedItems));
-
-                if (error) {
-                    logFailure(error, failedItems);
-                    context.fail(JSON.stringify(error));
-                } else {
-                    console.log('Success: ' + JSON.stringify(success));
-                    context.succeed('Success');
+    };
+    if (_workType == 'CLOUDTRAIL') {
+        if (key.indexOf("CloudTrail/") != -1) {
+            await S3.getObject(params, async function (err, data) {
+                if (err !== null) {
+                    console.error(err);
                 }
-            });
-        });
-    }).promise();
+
+                var zippedInput = Buffer.from(data.Body as string, 'base64');
+
+                // decompress the input
+                zlib.gunzip(zippedInput, function (error, buffer) {
+                    if (error) { console.log('gzip err:', error); return; }
+                    // parse the input from JSON
+                    var awslogsData = JSON.parse(buffer.toString('utf8'));
+
+                    var elasticsearchBulkData = transform(awslogsData);
+
+                    // post documents to the Amazon Elasticsearch Service
+                    post(elasticsearchBulkData, function (error: any, success: any, statusCode: any, failedItems: any) {
+                        console.log('Response: ' + JSON.stringify({
+                            "statusCode": statusCode
+                        }));
+
+                        if (error) {
+                            console.log('post failedItems: ', JSON.stringify(failedItems));
+                            logFailure(error, failedItems);
+                            context.fail(JSON.stringify(error));
+                        } else {
+                            console.log('Success: ' + JSON.stringify(success));
+                            context.succeed('Success');
+                        }
+                    });
+                });
+            }).promise();
+        } else {
+            console.log('Skip: The S3 object\'s key does not match CloudTrail/ formate, the key is: ', key);
+            context.succeed('Success');
+        }
+    }
 };
 
 function transform(payload: any) {
@@ -69,7 +70,7 @@ function transform(payload: any) {
     var bulkRequestBody = '';
 
     payload.Records.forEach(function (Record: any) {
-        // index name format: cwl-YYYY.MM.DD
+        // index name format: cloudtrail-YYYY.MM.DD
         var indexName = [
             'cloudtrail-' + Record.eventTime.substring(0, 4),    // year
             Record.eventTime.substring(5, 7),                    // month
@@ -176,7 +177,11 @@ function post(body: any, callback: any) {
 }
 
 function buildRequest(endpoint: any, body: any) {
-    var endpointParts = endpoint.match(/^([^\.]+)\.?([^\.]*)\.?([^\.]*)\.amazonaws\.com$/);
+    if (_region == 'cn-north-1' || _region == 'cn-northwest-1') {
+        var endpointParts = endpoint.match(/^([^\.]+)\.?([^\.]*)\.?([^\.]*)\.amazonaws\.com.cn$/);
+    } else {
+        var endpointParts = endpoint.match(/^([^\.]+)\.?([^\.]*)\.?([^\.]*)\.amazonaws\.com$/);
+    }
     var region = endpointParts[2];
     var service = endpointParts[3];
     var datetime = (new Date()).toISOString().replace(/[:\-]|\.\d{3}/g, '');
