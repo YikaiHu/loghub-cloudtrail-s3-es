@@ -6,9 +6,9 @@ function transform(s3AccessData: string) {
     var bulkRequestBody = '';
 
     dataArray.forEach(function (Record: any) {
-        console.log("data in arrays: ", Record);
         var source = parseS3AccessLogLine(Record);
         if (source == null) return;
+        console.log("data in arrays: ", Record);
         source['@timestamp'] = source.timestamp;
         source['@message'] = JSON.stringify(Record);
 
