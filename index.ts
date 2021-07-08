@@ -82,7 +82,6 @@ async function sendCloudtrail(params: any, context: any) {
         var requestParams = await buildRequest(endpoint, elasticsearchBulkData, _region!);
 
         try {
-            console.log("step1");
             await httpsRequest(requestParams);
             context.succeed('Success');
         } catch (err) {
