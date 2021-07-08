@@ -29,6 +29,7 @@ function httpsRequest(requestParams: any) {
                             "failedItems": failedItems.length
                         };
                         console.log(success);
+                        if (failedItems.length > 0) { console.log(failedItems); }
                     }
 
                     if (res.statusCode !== 200 || info.errors === true) {

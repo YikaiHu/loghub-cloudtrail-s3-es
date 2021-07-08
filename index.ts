@@ -75,25 +75,22 @@ async function sendCloudtrail(params: any, context: any) {
 
         var zippedInput = await Buffer.from(data.Body as string, 'base64');
 
-        // decompress the input
-        zlib.gunzip(zippedInput, async function (error, buffer) {
-            if (error) { console.log('gzip err:', error); return; }
-            // parse the input from JSON
-            var awslogsData = JSON.parse(buffer.toString('utf8'));
+        const awslogsData = JSON.parse(await zlib.gunzipSync(zippedInput).toString('utf8'));
 
-            var elasticsearchBulkData = await CloudTrailWorker.transform(awslogsData);
+        var elasticsearchBulkData = await CloudTrailWorker.transform(awslogsData);
 
-            var requestParams = await buildRequest(endpoint, elasticsearchBulkData, _region!);
+        var requestParams = await buildRequest(endpoint, elasticsearchBulkData, _region!);
 
-            try {
-                await httpsRequest(requestParams);
-                context.succeed('Success');
-            } catch (err) {
-                console.error('POST request failed, error:', err);
-                context.fail(JSON.stringify(err));
-            }
+        try {
+            console.log("step1");
+            await httpsRequest(requestParams);
             context.succeed('Success');
-        });
+        } catch (err) {
+            console.error('POST request failed, error:', err);
+            context.fail(JSON.stringify(err));
+        }
+        context.succeed('Success');
+
     } else {
         console.log('Skip: The S3 object\'s key does not match CloudTrail/ formate, the key is: ', params.Key);
         context.succeed('Success');
