@@ -1,53 +1,65 @@
 import https = require('https');
 import crypto = require('crypto');
 
-function post(endpoint:string, body: any, _region: string, callback: any) {
-    var requestParams = buildRequest(endpoint, body, _region);
+function httpsRequest(requestParams: any) {
+    return new Promise((resolve, reject) => {
+        var request = https.request(requestParams, (res: any) => {
+            if (res.statusCode < 200 || res.statusCode >= 300) {
+                return reject(new Error('statusCode=' + res.statusCode));
+            }
+            var responseBody = '';
+            res.on('data', function (chunk: any) {
+                responseBody += chunk;
+            });
+            res.on('end', function () {
+                try {
+                    var info = JSON.parse(responseBody);
+                    var failedItems: any;
+                    var success: any;
+                    var error: any;
 
-    var request = https.request(requestParams, function (response) {
-        var responseBody = '';
-        response.on('data', function (chunk) {
-            responseBody += chunk;
+                    if (res.statusCode! >= 200 && res.statusCode! < 299) {
+                        failedItems = info.items.filter(function (x: { index: { status: number; }; }) {
+                            return x.index.status >= 300;
+                        });
+
+                        success = {
+                            "attemptedItems": info.items.length,
+                            "successfulItems": info.items.length - failedItems.length,
+                            "failedItems": failedItems.length
+                        };
+                        console.log(success);
+                    }
+
+                    if (res.statusCode !== 200 || info.errors === true) {
+                        // prevents logging of failed entries, but allows logging
+                        // of other errors such as access restrictions
+                        delete info.items;
+                        error = {
+                            statusCode: res.statusCode,
+                            failedItems: failedItems,
+                            responseBody: info
+                        };
+                        console.log(error);
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+                resolve(responseBody);
+            });
         });
 
-        response.on('end', function () {
-            var info = JSON.parse(responseBody);
-            var failedItems: any;
-            var success: any;
-            var error: any;
-
-            if (response.statusCode! >= 200 && response.statusCode! < 299) {
-                failedItems = info.items.filter(function (x: { index: { status: number; }; }) {
-                    return x.index.status >= 300;
-                });
-
-                success = {
-                    "attemptedItems": info.items.length,
-                    "successfulItems": info.items.length - failedItems.length,
-                    "failedItems": failedItems.length
-                };
-            }
-
-            if (response.statusCode !== 200 || info.errors === true) {
-                // prevents logging of failed entries, but allows logging
-                // of other errors such as access restrictions
-                delete info.items;
-                error = {
-                    statusCode: response.statusCode,
-                    responseBody: info
-                };
-            }
-
-            callback(error, success, response.statusCode, failedItems);
+        request.on('error', (e) => {
+            reject(e.message);
         });
-    }).on('error', function (e) {
-        callback(e);
+
+        request.end(requestParams.body);
     });
-    request.end(requestParams.body);
 }
 
 
 function buildRequest(endpoint: any, body: any, _region: string) {
+
     if (_region == 'cn-north-1' || _region == 'cn-northwest-1') {
         var endpointParts = endpoint.match(/^([^\.]+)\.?([^\.]*)\.?([^\.]*)\.amazonaws\.com.cn$/);
     } else {
@@ -120,7 +132,6 @@ function buildRequest(endpoint: any, body: any, _region: string) {
     return request;
 }
 
-
 function hmac(key: any, str: any, encoding: any = null) {
     return crypto.createHmac('sha256', key).update(str, 'utf8').digest(encoding);
 }
@@ -168,4 +179,4 @@ function logFailure(error: any, failedItems: any) {
     }
 }
 
-export {post, buildSource, logFailure}
+export { httpsRequest, buildSource, buildRequest, logFailure }

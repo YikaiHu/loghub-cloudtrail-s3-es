@@ -1,6 +1,7 @@
 const LOG_REGEX = /([^ ]+) ([^ ]+) \[([^\]]+)\] ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) "([^ ]+) ([^ ]+) ([^"]+)" ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) "([^ ]+)" "([^"]+)" ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+)/;
 
 function transform(s3AccessData: string) {
+
     const dataArray = s3AccessData.split("\n");
 
     var bulkRequestBody = '';
