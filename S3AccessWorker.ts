@@ -9,7 +9,7 @@ function transform(s3AccessData: string) {
     dataArray.forEach(function (Record: any) {
         var source = parseS3AccessLogLine(Record);
         if (source == null) return;
-        console.log("data in arrays: ", Record);
+        console.log("Data in S3 Access arrays: ", Record);
         source['@timestamp'] = source.timestamp;
         source['@message'] = JSON.stringify(Record);
 

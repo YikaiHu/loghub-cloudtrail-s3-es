@@ -46,7 +46,6 @@ async function sendS3Access(params: any, context: any) {
     const S3 = new AWS.S3({ region: _region, apiVersion: '2006-03-01' });
 
     const data = await S3.getObject(params).promise();
-    console.log("S3 Access body: ", data.Body!.toString('ascii'));
     const s3AccessData = data.Body!.toString('ascii');
 
     var elasticsearchBulkData = await S3AccessWorker.transform(s3AccessData);
@@ -58,6 +57,7 @@ async function sendS3Access(params: any, context: any) {
         context.succeed('Success');
     } catch (err) {
         console.error('POST request failed, error:', err);
+        console.log('Failed transfer the log file: ', params);
         context.fail(JSON.stringify(err));
     }
     context.succeed('Success');
@@ -86,6 +86,7 @@ async function sendCloudtrail(params: any, context: any) {
             context.succeed('Success');
         } catch (err) {
             console.error('POST request failed, error:', err);
+            console.log('Failed transfer the log file: ', params);
             context.fail(JSON.stringify(err));
         }
         context.succeed('Success');
