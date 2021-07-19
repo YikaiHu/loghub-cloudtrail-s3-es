@@ -9,7 +9,7 @@ import * as S3AccessWorker from './S3AccessWorker';
 import { httpsRequest, buildRequest } from './common'
 
 const _region = process.env.AWS_REGION;
-let _workType = 'S3ACCESS';
+let _workType = 'CLOUDTRAIL';
 
 var endpoint = 'vpc-loghub-poaml2l2lbh6ssqbzadioh4gri.us-east-1.es.amazonaws.com';
 
@@ -53,7 +53,7 @@ async function sendS3Access(params: any, context: any) {
     var requestParams = await buildRequest(endpoint, elasticsearchBulkData, _region!);
 
     try {
-        await httpsRequest(requestParams);
+        await httpsRequest(params, requestParams);
         context.succeed('Success');
     } catch (err) {
         console.error('POST request failed, error:', err);
@@ -82,7 +82,7 @@ async function sendCloudtrail(params: any, context: any) {
         var requestParams = await buildRequest(endpoint, elasticsearchBulkData, _region!);
 
         try {
-            await httpsRequest(requestParams);
+            await httpsRequest(params, requestParams);
             context.succeed('Success');
         } catch (err) {
             console.error('POST request failed, error:', err);

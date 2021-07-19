@@ -1,7 +1,7 @@
 import https = require('https');
 import crypto = require('crypto');
 
-function httpsRequest(requestParams: any) {
+function httpsRequest(params: any, requestParams: any) {
     return new Promise((resolve, reject) => {
         var request = https.request(requestParams, (res: any) => {
             if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -36,6 +36,7 @@ function httpsRequest(requestParams: any) {
                         // of other errors such as access restrictions
                         delete info.items;
                         error = {
+                            params: params,
                             statusCode: res.statusCode,
                             failedItems: failedItems,
                             responseBody: info

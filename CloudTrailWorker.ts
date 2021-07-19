@@ -1,10 +1,10 @@
-import {buildSource} from './common'
+import { buildSource } from './common'
 /**
  * 
  * @param payload 
  * @returns bulkRequestBody
  */
- function transform(payload: any) {
+function transform(payload: any) {
     if (payload === null) {
         return null;
     }
@@ -25,6 +25,13 @@ import {buildSource} from './common'
         source['@message'] = JSON.stringify(Record);
         source['@owner'] = payload.owner;
 
+        //issue 1, source["requestParameters"]["filter"] will cause ES reject
+        try {
+            source["requestParameters"]["filter"] = convertArrayIntoObject(source["requestParameters"]["filter"]);
+        } catch (ex) {
+            console.log("Transform error! ", ex);
+        }
+
         //Using ElasticSearch created _id.
         var action = {
             "index": {
@@ -43,4 +50,16 @@ import {buildSource} from './common'
     return bulkRequestBody;
 }
 
-export {transform}
+function isArray(o: any) {
+    return Object.prototype.toString.call(o) == '[object Array]';
+}
+
+function convertArrayIntoObject(temp_value: any) {
+    if (isArray(temp_value)) {
+        return { 'value': temp_value }
+    } else {
+        return temp_value;
+    }
+}
+
+export { transform }
