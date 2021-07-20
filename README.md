@@ -27,5 +27,5 @@ Meanwhile this project still in POC progress. It will be moved to Amazon Web Ser
 1. You need install npm, suggest version 6.14.5
 1. `cd loghub-cloudtrail-s3-es`
 1. run `npm -i`
-1. After that, you can modify the code in *.ts file, they will be build into *.js file. **Remember to modify the `_workType` and `endpoint` in index.js**
+1. After that, you can modify the code in *.ts file, they will be build into *.js file. **Remember to modify the `_workType` and `endpoint` in index.ts**
 1. run `npm run build`
