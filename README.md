@@ -36,7 +36,8 @@ Meanwhile this project still in POC progress. It will be moved to Amazon Web Ser
 This Helper function will automatically increase the indexes' field's upper limit and set the ignore_malformed to true.
 
 1. Create a Lambda function.
-1. Copy the codes under the `openSearchHelper` Folder:
+1. Copy the codes under the `openSearchHelper` Folder
+1. Config the Handler of the Lambda to `increaseMappingLimit.lambda_handler`
 1. Config the Lambda Environment variables
 
     | Key | Value |
@@ -45,6 +46,7 @@ This Helper function will automatically increase the indexes' field's upper limi
     | ES_ENDPOINT | vpc-xxxxxx-xxxxxxxxxx.us-east-1.es.amazonaws.com | 
     | INDEX_NAME | xxxxxxx | 
 
+1. Make a Lambda Layer accourding to the `openSearchHelper/layer/requirements.txt`, and config the lambda's layer
 1. Config the Event Rule to `'cron(58 23 * * ? *)'` and add this to the Lambda Trigger
 ![](doc/create-event-rule.png)
 ![](doc/HelperLambda-trigger.png)
