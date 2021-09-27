@@ -1,7 +1,8 @@
 import https = require('https');
 import crypto = require('crypto');
+import AWS = require('aws-sdk');
 
-function httpsRequest(params: any, requestParams: any) {
+function httpsRequest(requestParams: any, logsData?: any, logFileKey?: any) {
     return new Promise((resolve, reject) => {
         var request = https.request(requestParams, (res: any) => {
             if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -11,12 +12,25 @@ function httpsRequest(params: any, requestParams: any) {
             res.on('data', function (chunk: any) {
                 responseBody += chunk;
             });
-            res.on('end', function () {
+            res.on('end', async function () {
                 try {
                     var info = JSON.parse(responseBody);
                     var failedItems: any;
                     var success: any;
                     var error: any;
+                    var failedLogs = {
+                        Records: [] as any
+                    };
+                    for (var i = 0; i < info.items.length; i++) {
+                        if (info.items[i].index.status >= 300) {
+                            if(process.env.LOG_TYPE == 'CloudTrail'){
+                                failedLogs.Records.push(logsData.Records[i])
+                            }else if(process.env.LOG_TYPE == 'S3Access'){
+                                const dataArray = logsData.split("\n");
+                                failedLogs.Records.push(dataArray[i])
+                            }
+                        }
+                    }
 
                     if (res.statusCode! >= 200 && res.statusCode! < 299) {
                         failedItems = info.items.filter(function (x: { index: { status: number; }; }) {
@@ -36,7 +50,6 @@ function httpsRequest(params: any, requestParams: any) {
                         // of other errors such as access restrictions
                         delete info.items;
                         error = {
-                            params: params,
                             statusCode: res.statusCode,
                             failedItems: failedItems,
                             responseBody: info
@@ -44,6 +57,11 @@ function httpsRequest(params: any, requestParams: any) {
                     }
                     if (failedItems.length > 0) {
                         logFailure(error, failedItems);
+                        var failedLogsContent = JSON.stringify(failedLogs); 
+                        var endIndex = logFileKey.length - 8;
+                        const failedLogsKey = process.env.DOMAIN_NAME + '/' + process.env.LOG_TYPE + '/' 
+                        + logFileKey.substr(0, endIndex) + '_' + failedItems.length.toString() + '_failed.json';
+                        await putObjectToS3(failedLogsContent, process.env.FAILED_LOG_BUCKET_NAME, failedLogsKey)
                     }
                 } catch (e) {
                     reject(e);
@@ -133,6 +151,29 @@ function buildRequest(endpoint: any, body: any, _region: string) {
     ].join(', ');
 
     return request;
+}
+
+
+/**
+ * This function used to write file to S3 bucket
+ * @param data 
+ * @param bucket 
+ * @param key 
+ */
+ function putObjectToS3(data: any, bucket: any, key: any) {
+    return new Promise<void>(async (resolve) => {
+        var s3 = new AWS.S3();
+        var params = {
+            Bucket: bucket,
+            Key: key,
+            Body: data
+        }
+        await s3.putObject(params, function (err) {
+            if (err) console.log(err, err.stack); 
+            else console.log("Put failed injection logs to s3 Bucket:" + bucket + ":" + key);      
+        }).promise();
+        resolve();
+    });
 }
 
 function hmac(key: any, str: any, encoding: any = null) {

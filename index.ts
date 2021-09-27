@@ -9,9 +9,8 @@ import * as S3AccessWorker from './S3AccessWorker';
 import { httpsRequest, buildRequest } from './common'
 
 const _region = process.env.AWS_REGION;
-let _workType = 'CLOUDTRAIL';
-
-var endpoint = 'vpc-loghub-poaml2l2lbh6ssqbzadioh4gri.us-east-1.es.amazonaws.com';
+const _workType = process.env.LOG_TYPE;
+const endpoint = process.env.ES_ENDPOINT;
 
 const handler = async function (event: any, context: any) {
     // Get the object from the event and show its content type
@@ -23,12 +22,10 @@ const handler = async function (event: any, context: any) {
     };
     switch (_workType) {
         case 'CLOUDTRAIL': {
-            console.log("Get CloudTrail Log sending job.");
             await sendCloudtrail(params, context);
             break;
         }
         case 'S3ACCESS': {
-            console.log("Get S3 Access Log sending job.");
             await sendS3Access(params, context);
             break;
         }
@@ -53,7 +50,7 @@ async function sendS3Access(params: any, context: any) {
     var requestParams = await buildRequest(endpoint, elasticsearchBulkData, _region!);
 
     try {
-        await httpsRequest(params, requestParams);
+        await httpsRequest(requestParams, s3AccessData, params.Key );
         context.succeed('Success');
     } catch (err) {
         console.error('POST request failed, error:', err);
@@ -82,7 +79,7 @@ async function sendCloudtrail(params: any, context: any) {
         var requestParams = await buildRequest(endpoint, elasticsearchBulkData, _region!);
 
         try {
-            await httpsRequest(params, requestParams);
+            await httpsRequest(requestParams, awslogsData, params.Key);
             context.succeed('Success');
         } catch (err) {
             console.error('POST request failed, error:', err);
