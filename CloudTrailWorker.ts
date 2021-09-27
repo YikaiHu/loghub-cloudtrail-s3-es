@@ -32,6 +32,15 @@ function transform(payload: any) {
             console.log("Transform error! ", ex);
         }
 
+        //issue 2, typeof source["responseElements"]["role"] === string will cause ES reject
+        if (source["responseElements"] != null && source["responseElements"].hasOwnProperty("role")) {
+            try {
+                source["responseElements"]["role"] = convertStringIntoObject(source["responseElements"]["role"]);
+            } catch (err) {
+                console.log("Transform CloudTrail issue 2 error! ", err);
+            }
+        }
+
         //Using ElasticSearch created _id.
         var action = {
             "index": {
@@ -56,6 +65,14 @@ function isArray(o: any) {
 
 function convertArrayIntoObject(temp_value: any) {
     if (isArray(temp_value)) {
+        return { 'value': temp_value }
+    } else {
+        return temp_value;
+    }
+}
+
+function convertStringIntoObject(temp_value: any) {
+    if (typeof temp_value === 'string') {
         return { 'value': temp_value }
     } else {
         return temp_value;
