@@ -10,9 +10,13 @@ Meanwhile this project still in POC progress. It will be moved to Amazon Web Ser
 
 ## User Guide
 
+### Config the OpenSearch Index Pattern
+1. Clone this repo.
+1. Replace the `YOUR_INDEX_NAME-*` in `source/opensearch-index/cloudtrail-index.ndjson` to your index_name
+1. Import the `source/opensearch-index/cloudtrail-index.ndjson` to your OpenSearch/Stack Management/Saved objects
+![](doc/import-index-pattern.png)
 ### Config Log Sender
 
-1. Clone this repo.
 1. Create a Lambda function.
 1. Copy these function into the Lambda:
     * index.js
